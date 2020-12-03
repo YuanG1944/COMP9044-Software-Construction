@@ -1,0 +1,97 @@
+#!/bin/dash
+
+now=`cat .shrug/__branch/__branch.txt`
+
+#-a特殊上传
+if test `echo $@ | awk '{print $1}'` = "-a"
+then
+    #找出未add的不同的文件,并将其更新至add
+    if test `echo $@ | awk '{print $2}'` = "-m"
+    then
+        txt_name=`ls | grep -v ".sh"`
+        for name in $txt_name
+        do
+            if test -e $name
+            then
+                cp -p $name ./.shrug/__index
+            else
+                if test -e .shrug/__index/$name
+                then
+                    rm .shrug/__index/$name   
+                fi
+            fi
+        done
+    fi
+fi
+
+
+if test `echo $@ | awk '{print $1}'` = "-m" -o `echo $@ | awk '{print $2}'` = "-m"
+then
+#--------------------判断文件是否相同-------------------------------------------------------
+    fiff_file=`ls .shrug/__repository/$now/subf | sort -n | tail -n1`
+    diff_t_file=`diff -r .shrug/__index .shrug/__repository/$now/subf/$fiff_file`
+
+    diff_f=$(for file in `ls ./.shrug/__index`
+    do
+        if test -e ./.shrug/__repository/$now/subf/$fiff_file/$file
+        then 
+            diff_i_s=`diff -q .shrug/__index/$file .shrug/__repository/$now/subf/$fiff_file/$file | awk '{print $1}'`
+            if test -z $diff_i_s 
+            then
+                continue
+            else
+                echo $file
+            fi
+        else
+            echo $file
+        fi
+    done
+    )
+    
+    ind_file=`echo $(ls .shrug/__index) | tr -d ' '`'+'
+    su_file=`echo $(ls .shrug/__repository/$now/subf/$fiff_file) | tr -d ' '`'+'
+    
+    if test $ind_file != $su_file
+    then
+        diff_f=`echo $diff_f "bad"`
+    fi
+    
+    diff_f=`echo $diff_f | tr -d ' '`
+
+#--------------------判断是否满足nothing to commit-------------------------------------------------------
+    if test -z $diff_f
+    then
+        echo nothing to commit
+    else
+#-------------------正常打印----------------------------------------------------------------------------
+        #打印日志
+        if test `echo $@ | awk '{print $1}'` = "-m"
+        then 
+            content=$2
+        else
+            content=$3
+        fi
+
+        if test `cat .shrug/__logf/$now"_log.txt" | awk 'NR==1{print $1}'` = "-1"
+        then
+            echo "0" `echo $content` "="$now "="`ls ./.shrug/__index` > .shrug/__logf/$now"_log.txt"
+            echo Committed as commit 0
+        else
+            num=`cat .shrug/__logf/__num_log.txt | tail -n1 |awk '{print $1}'`
+            num=$(($num+1))
+            echo $num > .shrug/__logf/__num_log.txt
+            context="$num `echo $content`"
+            echo $context >> .shrug/__logf/$now"_log.txt" "="$now =`ls ./.shrug/__index`
+            echo Committed as commit $num
+        fi
+
+        #上传日志
+        num=`cat .shrug/__logf/$now"_log.txt" | tail -n1 | awk '{print $1}'`
+        mkdir .shrug/__repository/$now/subf/$num
+        echo "$num" > .shrug/__repository/master/delete.txt
+        for file in `ls ./.shrug/__index`
+        do
+            cp -p .shrug/__index/$file .shrug/__repository/$now/subf/$num/$file
+        done
+    fi
+fi

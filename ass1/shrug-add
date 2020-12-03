@@ -1,0 +1,40 @@
+#!/bin/dash
+# num=`cat .shrug/__repository/$now/__logf/add_log.txt | tail -n1 | awk '{print $2}'`
+# num=$(($num+1))
+
+if test -e ./.shrug
+then
+    now=`cat .shrug/__branch/__branch.txt`
+    getsum=
+    getdele=
+    for file in $@
+    do
+        if test -e $file
+        then
+            getsum=`echo $getsum $file`
+        else
+            if test -e .shrug/__index/$file
+            then
+                getdele=`echo $getdele $file`
+                # rm .shrug/__index/$file   
+                # cat .shrug/__repository/$now/__logf/add_log.txt | sed "s/$file/$file+/g" > .shrug/__repository/$now/__logf/f_log.txt
+            else
+                echo shrug-add: error: can not open \'$file\'
+                exit 1;
+            fi
+        fi
+    done
+
+    for sum in $getsum
+    do
+        cp -p $sum ./.shrug/__index
+    done
+
+    for delet in $getdele
+    do
+        rm .shrug/__index/$delet   
+    done
+else
+    echo shrug-add: error: no .shrug directory containing shrug repository exists
+    exit 1;
+fi

@@ -1,0 +1,31 @@
+#!/bin/dash
+
+version=`echo $@ | awk 'BEGIN{FS=":"}{print $1}'`
+name=`echo $@ | awk 'BEGIN{FS=":"}{print $2}'`
+now=`cat .shrug/__branch/__branch.txt`
+
+if test -z $version
+then
+    if test -e .shrug/__index/$name
+    then 
+        cat .shrug/__index/$name
+    else
+        echo shrug-show: error: \'$name\' not found in index
+        exit 1;
+    fi
+else
+    if test -e .shrug/__repository/$now/subf/$version
+    then
+        if test -e .shrug/__repository/$now/subf/$version/$name
+        then
+            cat .shrug/__repository/$now/subf/$version/$name
+        else
+            echo shrug-show: error: \'$name\' not found in commit $version
+            exit 1;
+        fi
+    else
+        echo shrug-show: error: unknown commit \'$version\'
+        exit 1;
+    fi
+fi
+

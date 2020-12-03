@@ -1,0 +1,115 @@
+#!/bin/dash
+now=`cat .shrug/__branch/__branch.txt`
+
+
+if test -d ".shrug" 
+then
+    #arcg得有值
+    if test -z $1
+    then
+        exit 1;
+    else
+        branch=`cat .shrug/__logf/__branch_log.txt | grep -w $1`
+        #如果不匹配
+        if test -z $branch 
+        then
+            #不匹配
+            echo shrug-checkout: error: unknown branch  "'$1'"
+            exit 1;
+
+        #没有语法错误之后 
+        else
+            #当前最后commite版本
+            now_version=`ls .shrug/__repository/$now/subf | sort -n | tail -n1 | tr -d ' '`
+            #想切换的目标最后commite版本
+            aim_version=`ls .shrug/__repository/$1/subf | sort -n | tail -n1 | tr -d ' '`
+            if test $now_version = $aim_version
+            then
+                #两个版本相同,随便切换
+                echo $1 > .shrug/__branch/__branch.txt
+                echo Switched to branch "'$1'"
+            else
+                recycle=
+                #版本不同,回收三个区域都相同的文件
+                for file in `ls .shrug/__repository/$now/subf/$now_version`
+                do
+                    #然后释放切换版本的所有东西
+                    #在index中存在
+                    if test -e .shrug/__index/$file
+                    then
+                        diff_i_s=`diff -q .shrug/__index/$file .shrug/__repository/$now/subf/$now_version/$file | awk '{print $1}'`
+                        if test -z $diff_i_s
+                        then
+                            if test -e $file
+                            then
+                                content_sub=`diff -q $file .shrug/__repository/$now/subf/$now_version/$file | awk '{print $1}'`
+                                if test -e $content_sub
+                                then
+                                    recycle=`echo $recycle $file`
+                                fi
+                            fi
+                        fi
+                    fi
+                done
+                for file in $recycle
+                do
+                    rm $file
+                    rm .shrug/__index/$file
+                done
+                
+                #释放新版本中的内容
+                release=
+                for file in `ls .shrug/__repository/$1/subf/$aim_version`
+                do
+                    #检测版本是否一致,不一致就报错
+                    if test -e .shrug/__index/$file
+                    then
+                        diff_i_s=`diff -q .shrug/__index/$file .shrug/__repository/$1/subf/$aim_version/$file | awk '{print $1}'`
+                        if test -z $diff_i_s
+                        then
+                            continue
+                        else
+                            echo shrug-checkout: error: Your changes to the following files would be overwritten by checkout:
+                            echo $file
+                            #删掉的还回去
+                            for file in $recycle
+                            do
+                                cp -p .shrug/__repository/$now/subf/$now_version/$file $file
+                                cp -p .shrug/__repository/$now/subf/$now_version/$file .shrug/__index/$file
+                            done
+                            exit 1;
+                        fi
+                    fi
+                    if test -e $file
+                    then
+                        content_sub=`diff -q $file .shrug/__repository/$1/subf/$aim_version/$file | awk '{print $1}'`
+                        if test -e $content_sub
+                        then
+                            continue
+                        else
+                            echo shrug-checkout: error: Your changes to the following files would be overwritten by checkout:
+                            echo $file
+                            #删掉的还回去
+                            for file in $recycle
+                            do
+                                cp -p .shrug/__repository/$now/subf/$now_version/$file $file
+                                cp -p .shrug/__repository/$now/subf/$now_version/$file .shrug/__index/$file
+                            done
+                            exit 1;
+                        fi
+                    fi
+                    release=`echo $release $file`
+                done
+                for file in $release
+                do
+                    cp -p .shrug/__repository/$1/subf/$aim_version/$file $file
+                    cp -p .shrug/__repository/$1/subf/$aim_version/$file .shrug/__index/$file
+                done
+
+                echo $1 > .shrug/__branch/__branch.txt
+                echo Switched to branch "'$1'"
+                #版本不同,回收三个区域都相同的文件end
+            fi
+        fi
+    fi
+fi

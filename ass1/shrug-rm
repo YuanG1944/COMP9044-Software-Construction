@@ -1,0 +1,194 @@
+#!/bin/dash
+
+now=`cat .shrug/__branch/__branch.txt`
+#--force
+if test `echo $@ | awk '{print $1}'` = "--force"
+then
+    if test `echo $@ | awk '{print $2}'` = "--cached"
+    then
+        getsum=
+        for file in $@
+        do
+            if test $file = "--force"
+            then
+                continue
+            elif test $file = "--cached"
+            then
+                continue
+            else
+                if test -e .shrug/__index/$file
+                then
+                    getsum=`echo $getsum $file`
+                    # rm .shrug/__index/$file
+                else
+                    echo shrug-rm: error: \'$file\' is not in the shrug repository
+                    exit 1;
+                fi
+            fi
+        done
+
+        for sum in $getsum
+        do
+            rm .shrug/__index/$sum
+        done
+
+    else
+        getsum=
+        for file in $@
+        do
+            if test $file = "--force"
+            then
+                continue
+            else
+                if test -e .shrug/__index/$file
+                then
+                    getsum=`echo $getsum $file`
+                else
+                    echo shrug-rm: error: \'$file\' is not in the shrug repository
+                    exit 1;
+                fi
+                
+            fi
+        done
+
+        for sum in $getsum
+        do
+            rm $sum
+            rm .shrug/__index/$sum
+        done
+    
+    fi
+#--cached
+elif test `echo $@ | awk '{print $1}'` = "--cached"
+then
+    getsum=
+    fiff_file=`ls .shrug/__repository/$now/subf | sort -n | tail -n1`
+    for name in $@
+    do  
+        
+        if test $name = "--cached"
+        then
+            continue
+        else
+            if test -e .shrug/__index/$name
+            then
+                if test -e .shrug/__repository/$now/subf/$fiff_file/$name
+                then
+                    #index与subf最新版本是否相同
+                    diff_name=`ls .shrug/__repository/$now/subf/$fiff_file | sort -n | tail -n1`
+                    diff_i_s=`diff -q .shrug/__index/$name .shrug/__repository/$now/subf/$fiff_file/$name | awk '{print $1}'`
+                    #是否相同
+                    if test -z $diff_i_s 
+                    then
+                        # rm .shrug/__index/$name
+                        getsum=`echo $getsum $name`
+                    else
+                        content_index=`diff -q $name .shrug/__index/$name | awk '{print $1}'`
+                        if test -z $content_index 
+                        then
+                            getsum=`echo $getsum $name`
+                            # rm .shrug/__index/$name
+                        else
+                            echo shrug-rm: error: \'$name\' in index is different to both working file and repository
+                            exit 1;
+                        fi
+                    fi
+                else
+                    getsum=`echo $getsum $name`
+                    # rm .shrug/__index/$name
+                fi
+            else
+                echo shrug-rm: error: \'$name\' is not in the shrug repository
+                exit 1;
+            fi
+        fi
+    done
+
+    for sum in $getsum
+    do
+        rm .shrug/__index/$sum
+    done
+
+#normal
+else
+    getsum=
+    fiff_file=`ls .shrug/__repository/$now/subf | sort -n | tail -n1`
+    for name in $@
+    do
+        if test -e .shrug/__index/$name
+        then
+            if test -e .shrug/__repository/$now/subf/$fiff_file/$name
+            then 
+                #源文件与index是否相同
+                content_index=`diff -q $name .shrug/__index/$name | awk '{print $1}'`
+                #源文件与subf最新版本是否相同
+                content_sub=`diff -q $name .shrug/__repository/$now/subf/$fiff_file/$name | awk '{print $1}'`
+                #index与subf最新版本是否相同
+                diff_i_s=`diff -q .shrug/__index/$name .shrug/__repository/$now/subf/$fiff_file/$name | awk '{print $1}'`
+
+                #删除核心, 三个位置都相同时才可以删除
+                if test -z $content_index 
+                then 
+                    if test -z $content_sub 
+                    then
+                        if test -z $diff_i_s
+                        then
+                            # echo $name
+                            # rm $name
+                            # rm .shrug/__index/$name
+                            # # rm -r .shrug/__repository/$now/subf/"$name"f
+                            # # mkdir .shrug/__repository/$now/subf/"$name"d
+                            # mv .shrug/__repository/$now/subf/"$name"f .shrug/__repository/$now/subf/"$name"d
+                            getsum=`echo $getsum $name`
+                        else
+                            echo shrug-rm: error: \'$name\' in index is different to working file
+                            exit 1;
+                        fi
+                    else
+                        echo shrug-rm: error: \'$name\' has changes staged in the index
+                        exit 1;
+                    fi
+                else
+                    if test -z $diff_i_s 
+                    then
+                        echo shrug-rm: error: \'$name\' in repository is different to working file
+                        exit 1;
+                    else
+                        echo shrug-rm: error: \'$name\' in index is different to both working file and repository
+                        exit 1;
+                    fi
+                    # echo shrug-rm: error: \'$name\' in repository is different to working file
+                fi
+
+            else
+                echo shrug-rm: error: \'$name\' has changes staged in the index
+                exit 1;
+            fi
+        else
+            #不在index中
+            if test -e .shrug/__repository/$now/$fiff_file/$name
+            then
+                echo shrug-rm: error: \'$name\' is not in both shrug index and repository
+                exit 1;
+            else
+                echo shrug-rm: error: \'$name\' is not in the shrug repository
+                exit 1;
+            fi
+        fi
+    done
+
+    for sum in $getsum
+    do
+        rm $sum
+        rm .shrug/__index/$sum
+    done
+
+fi
+
+# error: the following file has local modifications:
+#     a
+
+# error: the following file has changes staged in the index:
+#     a
+
+#fatal: pathspec 'h' did not match any files

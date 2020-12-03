@@ -1,0 +1,113 @@
+#!/bin/dash
+
+now=`cat .shrug/__branch/__branch.txt`
+
+if test -d ".shrug" 
+then
+    if test -z $1
+    then
+        branch=`echo $(cat .shrug/__logf/__branch_log.txt) | tr -d ' '`
+        fiff_file=`ls .shrug/__repository/$now/subf | sort -n | tail -n1`
+        if test $branch = "master"
+        then
+            if test -z $fiff_file
+            then 
+                echo shrug-branch: error: your repository does not have any commits yet
+                exit 1;
+            else
+                cat .shrug/__logf/__branch_log.txt | sort -n
+            fi
+        else
+            cat .shrug/__logf/__branch_log.txt | sort -n
+        fi
+    #分支存在
+    elif test -d ".shrug/__repository/$1"
+    then
+        echo shrug-branch: error: branch "'$1'" already exists
+        exit 1;
+    #删除分支
+    elif test `echo $1 | awk '{print $1}'` = "-d"
+    then
+        branch=`cat .shrug/__logf/__branch_log.txt | grep -w $2`
+        #如果不匹配
+        if test -z $branch 
+        then
+            #不匹配
+            echo shrug-branch: error: branch "'$2'" does not exist
+            exit 1;
+        elif test $branch = "master"
+        then
+            #主分支不能删
+            echo shrug-branch: error: can not delete branch \'master\'
+            exit 1;
+        elif test $branch = $now
+        then
+            echo  echo shrug-branch: error: \'$now\' is in use. can not be deleted
+            exit 1;
+        else
+            has_file=$(
+            now_last=`cat .shrug/__repository/$now/delete.txt`
+                for br in `ls .shrug/__repository/`
+                do
+                    if test $br = $now
+                    then 
+                        continue
+                    else
+                        br_last=`cat .shrug/__repository/$br/delete.txt`
+                        if test $br_last = $now_last
+                        then
+                            echo $br
+                        fi
+                    fi
+                done
+            )
+            has_file=`echo $has_file | tr -d ' '`
+            if test -z $has_file
+            then
+                echo shrug-branch: error: branch \'$2\' has unmerged changes
+                exit 1;
+            else
+                #匹配
+                mv .shrug/__repository/$branch .shrug/__repository/$branch'd'
+                cat .shrug/__logf/__branch_log.txt | sed "s/$branch//g" | sed -n '/./p' > .shrug/__logf/__tmp_log.txt
+                cat .shrug/__logf/__tmp_log.txt > .shrug/__logf/__branch_log.txt
+                echo Deleted branch "'$branch'"
+                
+            fi
+        fi
+    
+    #有arcg输入且正确,创建branch    
+    else
+        #如果master的suf文件为空,依旧不能创造分支
+        fiff_file=`ls .shrug/__repository/$now/subf | sort -n | tail -n1`
+        if test -z $fiff_file
+        then 
+            echo shrug-branch: error: your repository does not have any commits yet
+            exit 1;
+        fi
+
+        if test -d .shrug/__repository/$1'd'
+        then 
+            mv .shrug/__repository/$1'd' .shrug/__repository/$1
+            echo "$1" >> .shrug/__logf/__branch_log.txt
+        else
+            now=`cat .shrug/__branch/__branch.txt`
+            cp -rp .shrug/__repository/$now .shrug/__repository/$1
+            cp .shrug/__logf/$now"_log.txt" .shrug/__logf/$1"_log.txt" 
+            # mkdir .shrug/__repository/$1
+            # mkdir .shrug/__repository/$1/index
+            # cp -rp .shrug/__repository/$now/subf .shrug/__repository/$1/subf
+            # cp -rp .shrug/__repository/$now/__logf .shrug/__repository/$1/__logf
+            # mkdir .shrug/__repository/$1/subf
+            # mkdir .shrug/__repository/$1/__logf
+            # touch .shrug/__repository/$1/__logf/add_log.txt
+            # touch .shrug/__repository/$1/__logf/f_log.txt
+            cat .shrug/__repository/$now/delete.txt >> .shrug/__repository/$now/father.txt
+            cat .shrug/__repository/$now/delete.txt >> .shrug/__repository/$1/father.txt
+            echo "$1" >> .shrug/__logf/__branch_log.txt
+        fi
+    fi
+else
+    echo "shrug-branch: error: .shrug not exists"
+    exit 1;
+fi

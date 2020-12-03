@@ -1,0 +1,82 @@
+hello world 
+老子最牛逼 傻逼
+老子最牛逼 傻逼
+老子最牛逼 傻逼
+老子最牛逼 傻逼
+老子最牛逼 傻逼
+
+
+#include<iostream>
+using namespace std;
+
+// int n3[3] = {2, 4, 6};
+// typedef int Int3[3];
+// Int3& rn3 = n3; 
+//默认参数:
+//void sample(int = 10);
+
+//引用
+//为对象起了另外一个名字
+//不可以直接使用常量
+void Swap1(int, int);
+void Swap2(int *, int *);
+void Swap3(int&, int&);
+int &sum(int&);
+int main(int argc, const char** argv) {
+    int num1, num2;
+    num1 = 10; 
+    num2 = 15;
+
+    cout << "Orignal" << endl;
+    cout << "num1: " << num1 << '\t';
+    cout << "num2: " << num2 << '\n';
+    Swap1(num1, num2);
+    cout << "Swap1:" << endl;
+    cout << "num1: " << num1 << '\t';
+    cout << "num2: " << num2 << '\n';
+
+    Swap2(&num1, &num2);
+    cout << "Swap2:" << endl;
+    cout << "num1: " << num1 << '\t';
+    cout << "num2: " << num2 << '\n';
+
+    Swap3(num1, num2);
+    cout << "Swap3:" << endl;
+    cout << "num1: " << num1 << '\t';
+    cout << "num2: " << num2 << '\n';
+
+
+    int numm = 10;
+    int & result = sum(numm);
+    cout << "result = " << result << endl;
+    sum(numm) = 55;
+    cout << "result = " << result << endl;
+    
+    return 0;
+}
+
+void Swap1(int num1, int num2){
+    int swp;
+    swp = num1;
+    num1 = num2;
+    num2 = swp;
+}
+
+void Swap2(int *num1, int *num2){
+    int swp;
+    swp = *num1;
+    *num1 = *num2;
+    *num2 = swp;
+}
+
+void Swap3(int &num1, int &num2){
+    int swp;
+    swp = num1;
+    num1 = num2;
+    num2 = swp;
+}
+
+int & sum(int & num){
+    num++;
+    return num;
+}

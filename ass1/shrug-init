@@ -1,0 +1,36 @@
+#!/bin/dash
+
+if test ! -d ".shrug" 
+then
+    mkdir .shrug
+    mkdir .shrug/__branch
+    touch .shrug/__branch/__branch.txt
+    echo "master" > .shrug/__branch/__branch.txt
+    # touch .shrug/__branch/tmp.txt
+    # echo "master" > .shrug/__branch/tmp.txt
+    mkdir .shrug/__repository
+    mkdir .shrug/__repository/master
+    touch .shrug/__repository/master/delete.txt
+    #用来merge之后删分支,会随分支变换
+    echo "0" > .shrug/__repository/master/delete.txt
+    touch .shrug/__repository/master/father.txt
+    #用来找父节点,branch操作后就不会再变化
+    echo "0" > .shrug/__repository/master/father.txt
+    mkdir .shrug/__index
+    mkdir .shrug/__repository/master/subf
+    # mkdir .shrug/__repository/master/switch_file
+    # mkdir .shrug/__repository/master/bridge_file
+    mkdir .shrug/__logf
+    touch .shrug/__logf/master_log.txt
+    # echo "-1" > .shrug/__logf/log.txt
+    echo "-1" > .shrug/__logf/master_log.txt
+    echo "0" > .shrug/__logf/__num_log.txt
+    touch .shrug/__logf/__branch_log.txt
+    touch .shrug/__logf/__tmp_log.txt
+    echo "master" > .shrug/__logf/__branch_log.txt
+    cat .shrug/__logf/__branch_log.txt > .shrug/__logf/__tmp_log.txt
+    echo "Initialized empty shrug repository in .shrug"
+else
+    echo "shrug-init: error: .shrug already exists"
+    exit 1;
+fi

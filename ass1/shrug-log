@@ -1,0 +1,4 @@
+#!/bin/dash
+now=`cat .shrug/__branch/__branch.txt`
+
+cat ./.shrug/__logf/$now"_log.txt" | sort -nr | awk 'BEGIN{FS="="}{print $1}'

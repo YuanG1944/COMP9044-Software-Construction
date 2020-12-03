@@ -1,0 +1,307 @@
+#!/bin/dash
+now=`cat .shrug/__branch/__branch.txt`
+if test -z $3
+then
+    echo shrug-merge: error: empty commit message
+    exit 1;
+else
+    if test $2 = "-m"
+    then
+        branch=`cat .shrug/__logf/__branch_log.txt | grep -w $1`
+        if test -z $branch 
+        then
+            #不匹配
+            echo shrug-merge: error: unknown branch "'$1'"
+            exit 1;
+        elif test $now = $1
+        then
+            echo shrug-merge: error: cannot merge itself
+        #没有语法错误后, 还要检查三个文件夹是否全部一致
+        else
+            
+            
+            # now_father=`cat .shrug/__repository/$now/father.txt | sort -n | tail -n1`
+            now_version=`ls .shrug/__repository/$now/subf | sort -n | tail -n1`
+            # aim_father=`cat .shrug/__repository/$1/father.txt | sort -n | tail -n1`
+            aim_version=`ls .shrug/__repository/$1/subf | sort -n | tail -n1`
+            #最近的父节点
+        
+            ls .shrug/__repository/$now/subf > .shrug/__repository/$now/father.txt
+            ls .shrug/__repository/$1/subf > .shrug/__repository/$1/father.txt
+            father_version=`comm -12 .shrug/__repository/$now/father.txt .shrug/__repository/$1/father.txt | sort -n | tail -n1`
+            # father_version=`grep -Ff .shrug/__repository/$now/father.txt .shrug/__repository/$1/father.txt | sort -n | tail -n1`
+            
+            savefile=
+            getst=
+            for file in `ls | grep -v ".sh"`
+            do
+                getst=`echo $getst $file`
+            done
+
+            for getst in `ls .shrug/__index`
+            do
+                getst=`echo $getst $file`
+            done
+
+            for getst in `ls .shrug/__repository/$now/subf/$now_version`
+            do
+                getst=`echo $getst $file`
+            done
+
+            getst=`echo $getst | tr ' ' '\n' | sort -n | uniq`
+            # echo $getsum
+            for name in $getst
+            do
+                if test -e $name -a -e .shrug/__repository/$now/subf/$now_version/$name -a -e .shrug/__index/$name
+                then
+                    #源文件与index是否相同
+                    content_index=`diff -q $name .shrug/__index/$name | awk '{print $1}'`
+                    #源文件与subf最新版本是否相同
+                    content_sub=`diff -q $name .shrug/__repository/$now/subf/$now_version/$name | awk '{print $1}'`
+                    if test -z $content_index
+                    then
+                        if test -z $content_sub
+                        then
+                            continue
+                        else
+                            echo error diff 71
+                            exit 1;
+                        fi
+                    else
+                        echo error diff 75
+                        exit 1;
+                    fi
+                else
+                    echo error 79
+                    exit 1;
+                fi
+            done
+
+            #单支双路合并
+            if test $now_version = $father_version
+            then
+                #直接拷贝一份过去就行(copy $1版本)
+                cp -rp .shrug/__repository/$1/subf/$aim_version .shrug/__repository/$now/subf/$aim_version
+                rm -r .shrug/__index
+                cp -rp .shrug/__repository/$1/subf/$aim_version .shrug/__index
+                for name in `ls | grep -v ".sh"`
+                do
+                    rm $name
+                done
+                for name in `ls .shrug/__index`
+                do
+                    cp -p .shrug/__index/$name $name
+                done
+                # echo $aim_version
+                cat .shrug/__logf/$now"_log.txt" .shrug/__logf/$1"_log.txt" | sort -n | uniq > .shrug/__logf/_tmp_log.txt
+                cat .shrug/__logf/_tmp_log.txt > .shrug/__logf/$now"_log.txt"
+                echo $aim_version > .shrug/__repository/$1/delete.txt
+                echo Fast-forward: no commit created
+            elif test $aim_version = $father_version
+            then
+                #直接拷贝一份过去就行(copy $now版本)
+                cp -rp .shrug/__repository/$now/subf/$now_version .shrug/__repository/$1/subf/$now_version
+                rm -r .shrug/__index
+                cp -rp .shrug/__repository/$now/subf/$now_version .shrug/__index
+                for name in `ls | grep -v ".sh"`
+                do
+                    rm $name
+                done
+                for name in `ls .shrug/__index`
+                do
+                    cp -p .shrug/__index/$name $name
+                done
+                # echo $aim_version
+                cat .shrug/__logf/$now"_log.txt" .shrug/__logf/$1"_log.txt" | sort -n | uniq > .shrug/__logf/_tmp_log.txt
+                cat .shrug/__logf/_tmp_log.txt > .shrug/__logf/$now"_log.txt"
+                echo $now_version >> .shrug/__repository/$now/delete.txt
+                echo Fast-forward: no commit created
+            elif test $now_version = $aim_version
+            then
+                cat .shrug/__logf/$now"_log.txt" .shrug/__logf/$1"_log.txt" | sort -n | uniq > .shrug/__logf/_tmp_log.txt
+                cat .shrug/__logf/_tmp_log.txt > .shrug/__logf/$now"_log.txt"
+                echo Fast-forward: no commit created
+            #双支三路合并
+            else
+                getsum=
+                for file in `ls .shrug/__repository/$now/subf/$now_version`
+                do
+                    getsum=`echo $getsum $file`
+                done
+
+                for file in `ls .shrug/__repository/$1/subf/$aim_version`
+                do
+                    getsum=`echo $getsum $file`
+                done
+
+                for file in `ls .shrug/__repository/$now/subf/$father_version`
+                do
+                    getsum=`echo $getsum $file`
+                done
+                getsum=`echo $getsum | tr ' ' '\n' | sort -n | uniq`
+                # echo $getsum
+                judge=`echo $getsum | tr -d ' '`
+                #创建暂存区
+                if test -z $judge
+                then
+                    echo not
+                    exit 1;
+                fi
+
+                mkdir .shrug/__tmp
+                touch .shrug/__tmp/__now_d_tmp.txt
+                touch .shrug/__tmp/__aim_d_tmp.txt
+                touch .shrug/__tmp/__swap_tmp.txt
+                touch .shrug/__tmp/__good_tmp.txt
+                touch .shrug/__tmp/__delete_tmp.txt
+
+                for name in $getsum
+                do
+                    if test -e .shrug/__repository/$now/subf/$father_version/$name -a -e .shrug/__repository/$now/subf/$now_version/$name -a -e .shrug/__repository/$1/subf/$aim_version/$name
+                    then
+
+                        # echo 三路存在
+                        cp -p .shrug/__repository/$now/subf/$father_version/$name .shrug/__tmp/$name
+                        diff .shrug/__tmp/$name .shrug/__repository/$now/subf/$now_version/$name | grep -w ".c." | awk '{print substr($1, 1, 1)}' > .shrug/__tmp/__now_d_tmp.txt
+                        diff .shrug/__tmp/$name .shrug/__repository/$1/subf/$aim_version/$name | grep -w ".c." | awk '{print substr($1, 1, 1)}' > .shrug/__tmp/__aim_d_tmp.txt
+                        clash=`comm -12 .shrug/__tmp/__now_d_tmp.txt .shrug/__tmp/__aim_d_tmp.txt`
+
+                        #是否有冲突
+                        #有冲突,报错退出
+                        if test -z $clash
+                        then
+                            #没冲突,改文件
+                            for line in `cat .shrug/__tmp/__now_d_tmp.txt`
+                            do
+                                # echo now+++++++++++++++++++++++++++++++++
+                                change=`cat .shrug/__repository/$now/subf/$now_version/$name | sed -n "$line"p`
+                                sed -E ""$line"s/./$change/g" .shrug/__tmp/$name > .shrug/__tmp/__swap_tmp.txt
+                                cat .shrug/__tmp/__swap_tmp.txt > .shrug/__tmp/$name
+                                savefile=`echo $savefile $name`
+                            done
+
+                            for line in `cat .shrug/__tmp/__aim_d_tmp.txt`
+                            do
+                                # echo aim+++++++++++++++++++++++++++++++++
+                                change=`cat .shrug/__repository/$1/subf/$aim_version/$name | sed -n "$line"p`
+                                sed -E ""$line"s/./$change/g" .shrug/__tmp/$name > .shrug/__tmp/__swap_tmp.txt
+                                cat .shrug/__tmp/__swap_tmp.txt > .shrug/__tmp/$name
+                                savefile=`echo $savefile $name`
+                            done
+                        else
+                            echo shrug-merge: error: These files can not be merged:
+                            echo $name
+                            rm -r .shrug/__tmp
+                            exit 1;
+                        fi
+                        # check1=`cat .shrug/__tmp/__now_d_tmp.txt`
+                        # check2=
+                        check=$(echo `cat .shrug/__tmp/__now_d_tmp.txt` `cat .shrug/__tmp/__aim_d_tmp.txt` | tr -d ' ')
+                        if test -z $check
+                        then 
+                            #冲突处理完,处理增减
+                            diff -D _a .shrug/__tmp/$name .shrug/__repository/$now/subf/$now_version/$name | sed -nE '/#ifndef/,/#endif.+!/p' | grep -v "#if" | grep -v "#end" > .shrug/__tmp/__delete_tmp.txt 
+                            diff -D _b .shrug/__tmp/$name .shrug/__repository/$1/subf/$aim_version/$name | sed -nE '/#ifndef/,/#endif.+!/p' | grep -v "#if" | grep -v "#end" >> .shrug/__tmp/__delete_tmp.txt
+
+                            # cat .shrug/__tmp/__now_d_tmp.txt | sed -nE '/#ifndef/,/#endif.+!/p' | grep -v "#if" | grep -v "#end" >> .shrug/__tmp/__delete_tmp.txt
+                            # cat .shrug/__tmp/__aim_d_tmp.txt | sed -nE '/#ifndef/,/#endif.+!/p' | grep -v "#if" | grep -v "#end" >> .shrug/__tmp/__delete_tmp.txt
+
+                            diff -D _a .shrug/__tmp/$name .shrug/__repository/$now/subf/$now_version/$name | grep -v "#if"| grep -v "#end" > .shrug/__tmp/__now_d_tmp.txt 
+                            diff -D _b .shrug/__tmp/$name .shrug/__repository/$1/subf/$aim_version/$name | grep -v "#if" | grep -v "#end" > .shrug/__tmp/__aim_d_tmp.txt
+                            diff -D _c .shrug/__tmp/__now_d_tmp.txt .shrug/__tmp/__aim_d_tmp.txt | grep -v "#if"| grep -v "#end" > .shrug/__tmp/__good_tmp.txt
+                            # clash=`cat .shrug/__tmp/__good_tmp.txt | grep "#else" | tr d ' '`
+                            if test -z $clash
+                            then
+                                #没冲突,改文件
+                                # IFS="\n" 
+                                while read line
+                                do
+                                    cat .shrug/__tmp/__good_tmp.txt | sed "s/$line//g" | grep -v "^$" > .shrug/__tmp/__aim_d_tmp.txt
+                                    cat .shrug/__tmp/__aim_d_tmp.txt > .shrug/__tmp/__good_tmp.txt
+                                done < .shrug/__tmp/__delete_tmp.txt
+                                
+                                cat .shrug/__tmp/__good_tmp.txt > .shrug/__tmp/$name
+                                savefile=`echo $savefile $name`
+                            else
+                                echo has clash
+                                rm -r .shrug/__tmp
+                                exit 1;
+                            fi
+                        fi
+
+                    elif test ! -e .shrug/__repository/$now/subf/$father_version/$name -a -e .shrug/__repository/$now/subf/$now_version/$name -a -e .shrug/__repository/$1/subf/$aim_version/$name
+                    then
+                        # echo $name diff
+                        diff_i_s=`diff -q .shrug/__repository/$now/subf/$now_version/$name .shrug/__repository/$1/subf/$aim_version | awk '{print $1}'`
+                        #俩文件相同就能传
+                        if test -z $diff_i_s
+                        then
+                            cp -p .shrug/__repository/$1/subf/$aim_version/$name .shrug/__tmp/$name
+                        else
+                            echo error: $name clash
+                            rm -r .shrug/__tmp
+                            exit 1;
+                        fi
+                    elif test -e .shrug/__repository/$now/subf/$father_version/$name -a ! -e .shrug/__repository/$now/subf/$now_version/$name -a -e .shrug/__repository/$1/subf/$aim_version/$name
+                    then
+                        cp -p .shrug/__repository/$1/subf/$aim_version/$name .shrug/__tmp/$name
+                    elif test -e .shrug/__repository/$now/subf/$father_version/$name -a -e .shrug/__repository/$now/subf/$now_version/$name -a ! -e .shrug/__repository/$1/subf/$aim_version/$name
+                    then
+                        cp -p .shrug/__repository/$now/subf/$now_version/$name .shrug/__tmp/$name 
+                    elif test ! -e .shrug/__repository/$now/subf/$father_version/$name -a -e .shrug/__repository/$now/subf/$now_version/$name -a ! -e .shrug/__repository/$1/subf/$aim_version/$name
+                    then
+                        cp -p .shrug/__repository/$now/subf/$now_version/$name .shrug/__tmp/$name 
+                    elif test ! -e .shrug/__repository/$now/subf/$father_version/$name -a ! -e .shrug/__repository/$now/subf/$now_version/$name -a -e .shrug/__repository/$1/subf/$aim_version/$name
+                    then
+                        cp -p .shrug/__repository/$1/subf/$aim_version/$name .shrug/__tmp/$name
+                    fi
+                done
+
+                #所有文件都处理完毕
+                #移动__tmp加上传commit
+                num=`cat .shrug/__logf/__num_log.txt | tail -n1 |awk '{print $1}'`
+                num=$(($num+1))
+                echo $num > .shrug/__logf/__num_log.txt
+                # echo $num
+                #删除tmp文件
+
+                rm .shrug/__tmp/__now_d_tmp.txt
+                rm .shrug/__tmp/__aim_d_tmp.txt
+                rm .shrug/__tmp/__swap_tmp.txt
+                rm .shrug/__tmp/__good_tmp.txt
+                rm .shrug/__tmp/__delete_tmp.txt
+                #移过去
+                mv .shrug/__tmp .shrug/__repository/$now/subf/$num
+                echo "$num" > .shrug/__repository/$now/delete.txt
+                echo "$num" > .shrug/__repository/$1/delete.txt
+                #移到index和工作区
+                rm -r .shrug/__index
+                cp -rp .shrug/__repository/$now/subf/$num .shrug/__index
+                for name in `ls | grep -v ".sh"`
+                do
+                    rm $name
+                done
+                for name in `ls .shrug/__index`
+                do
+                    cp -p .shrug/__index/$name $name
+                done
+                
+                #写commit
+                cat .shrug/__logf/$now"_log.txt" .shrug/__logf/$1"_log.txt" | sort -n | uniq > .shrug/__logf/_tmp_log.txt
+                cat .shrug/__logf/_tmp_log.txt > .shrug/__logf/$now"_log.txt"
+                context="$num `echo $3`"
+                echo $context >> .shrug/__logf/$now"_log.txt" "="$now =`ls ./.shrug/__repository/$now/subf/$num`
+                savefile=`echo $savefile | tr ' ' '\n' | sort -n | uniq`
+                for name in $savefile
+                do
+                    echo Auto-merging $name
+                done
+                echo Committed as commit $num
+
+            fi
+            #首先拿到当前分支和目标分支father信息
+        fi
+    else
+        exit 1;
+    fi
+fi

@@ -1,0 +1,86 @@
+#!/bin/dash
+
+now=`cat .shrug/__branch/__branch.txt`
+
+fiff_file=`ls .shrug/__repository/$now/subf | sort -n | tail -n1`
+# echo $file_log
+
+getsum=
+
+for file in `ls`
+do
+    getsum=`echo $getsum $file`
+done
+
+for file in `ls .shrug/__index`
+do
+    getsum=`echo $getsum $file`
+done
+
+for file in `ls .shrug/__repository/$now/subf/$fiff_file`
+do
+    getsum=`echo $getsum $file`
+done
+
+getsum=`echo $getsum | tr ' ' '\n' | sort -n | uniq`
+# echo $getsum
+
+for file in $getsum
+do
+    if test -e .shrug/__index/$file
+    then
+        if test -e .shrug/__repository/$now/subf/$fiff_file/$file
+        then
+            #index与subf最新版本是否相同
+            diff_i_s=`diff -q .shrug/__index/$file .shrug/__repository/$now/subf/$fiff_file/$file | awk '{print $1}'`
+            if test -e $file
+            then
+            
+                #源文件与index是否相同
+                content_index=`diff -q $file .shrug/__index/$file | awk '{print $1}'`
+                #源文件与subf最新版本是否相同
+                content_sub=`diff -q $file .shrug/__repository/$now/subf/$fiff_file/$file | awk '{print $1}'`
+                #比较是否相等
+                if test -z $content_index
+                then
+                    if test -z $content_sub
+                    then
+                        echo $file "- same as repo"
+                    else
+                        #text add 相同 commit 不同
+                        echo $file "- file changed, changes staged for commit"
+                    fi
+                else
+                    if test -z $diff_i_s
+                    then
+                        echo $file "- file changed, changes not staged for commit"
+                    else
+                        echo $file "- file changed, different changes staged for commit"
+                    fi
+                fi
+            else
+                #a text add commit 全都不同
+                echo $file "- file deleted"
+            fi
+        else
+            #在index不在在repository不在
+            echo $file "- added to index"
+        fi
+    elif test -e .shrug/__repository/$now/subf/$fiff_file/$file
+    then
+        if test -e $file
+        then
+            content_sub=`diff -q $file .shrug/__repository/$now/subf/$fiff_file/$file | awk '{print $1}'`
+            if test -z $content_sub
+            then
+                echo $file "- deleted"
+            else
+                echo $file "- untracked"
+            fi
+        else
+            echo $file "- deleted"
+        fi
+    else
+        echo $file "- untracked"
+    fi
+done
