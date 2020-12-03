@@ -1,9 +1,0 @@
-program=counting_classes_answers.txt
-shell=True
-
-q1 command="egrep '^Q1 answer' counting_classes_answers.txt|tail -1|sed 's/.*answer[: ]*//'|dos2unix|sh"  expected_stdout="441\n"
-q2 command="egrep '^Q2 answer' counting_classes_answers.txt|tail -1|sed 's/.*answer[: ]*//'|dos2unix|sh"  expected_stdout="35\n"
-q3 command="egrep '^Q3 answer' counting_classes_answers.txt|tail -1|sed 's/.*answer[: ]*//'|dos2unix|sh"  expected_stdout="     31 COMP1521\n"
-q4 command="egrep '^Q4 answer' counting_classes_answers.txt|tail -1|sed 's/.*answer[: ]*//'|dos2unix|sh"  expected_stdout="     26 Quad 1042\n"
-q5 command="egrep '^Q5 answer' counting_classes_answers.txt|tail -1|sed 's/.*answer[: ]*//'|dos2unix|sh"  expected_stdout="     20 Fri 11\n"
-q6 command="egrep '^Q6 answer' counting_classes_answers.txt|tail -1|sed 's/.*answer[: ]*//'|dos2unix|sh"  expected_stdout="COMP1000\nCOMP1511\nCOMP1521\nCOMP2041\nCOMP2511\nCOMP2521\nCOMP3331\nCOMP6441\nCOMP6841\nCOMP9044\nCOMP9311\nCOMP9313\nCOMP9331\nCOMP9417\n"
